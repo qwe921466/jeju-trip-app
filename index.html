@@ -148,6 +148,14 @@
       5: { date: '04/19 (日)', temp: '17-23°C', icon: 'sun', color: 'text-orange-500' },
     };
 
+    const ACCOMMODATIONS = {
+      1: { name: '濟州 BLACK SANDS', phone: '82-064-740-0800', bathtub: '疑似有', note: '' },
+      2: { name: '濟州 BLACK SANDS', phone: '82-064-740-0800', bathtub: '疑似有', note: '' },
+      3: { name: '濟州 BLACK SANDS', phone: '82-064-740-0800', bathtub: '疑似有', note: '' },
+      4: { name: '濟州 神話萬豪', phone: '82-064-908-8888', bathtub: '未確認', note: '' },
+      5: { name: '溫暖的家', phone: '-', bathtub: '未知', note: '' }
+    };
+
     const CATEGORY_OPTIONS = [
       { value: 'attraction', label: '景點', icon: 'map-marker-alt' },
       { value: 'transport', label: '交通', icon: 'car' },
@@ -160,6 +168,12 @@
     function App() {
       const [activeTab, setActiveTab] = useState('itinerary'); 
       const [activeDay, setActiveDay] = useState(1);
+      const [showAccommodation, setShowAccommodation] = useState(false);
+
+      // 當切換天數時，先收起住宿資訊
+      useEffect(() => {
+        setShowAccommodation(false);
+      }, [activeDay]);
       
       const [itinerary, setItinerary] = useState(() => {
         try {
@@ -175,6 +189,7 @@
         { id: 999, text: '先打勾再說', completed: false, type: 'task' },
         { id: 1, text: '確認護照效期（六個月以上）', completed: true, type: 'task' },
         { id: 2, text: '台塑有漲', completed: false, type: 'task' },
+        { id: 5, text: '港建穩穩的不用看', completed: false, type: 'task' },
         { id: 3, text: '橘子巧克力', completed: false, type: 'shopping' },
         { id: 4, text: 'Innisfree 綠茶精華', completed: false, type: 'shopping' }
       ];
@@ -297,6 +312,31 @@
           setTodos(todos.map(t => t.id === id ? { ...t, text: editingTodoText } : t));
         }
         setEditingTodoId(null);
+      };
+
+      const PRETRIP_ESSENTIALS_LIST = [
+        '護照', '機票 / 行程資料', '現金 / 信用卡', '行動電源（不可託運，100Wh 以下）', '牙刷（飯店不提供）',
+        '牙膏（飯店不提供）', '洗髮精（飯店不提供）', '沐浴乳（飯店不提供）', '梳子', '個人藥品', '雨傘', '韓國轉接頭（韓國 220V 圓型二孔）',
+        '手機充電線', '泳衣（神話萬豪泳池可用）', '泳帽', '運動鞋', '換洗衣物', '拖鞋（飯店不提供）'
+      ];
+
+      const [showEssentials, setShowEssentials] = useState(false);
+      const [essentialChecks, setEssentialChecks] = useState(() => {
+        try {
+          const saved = localStorage.getItem('jeju_essentials_chk');
+          return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+          return {};
+        }
+      });
+
+      useEffect(() => {
+        try { localStorage.setItem('jeju_essentials_chk', JSON.stringify(essentialChecks)); } 
+        catch (e) { console.error('Save essentials chk failed', e); }
+      }, [essentialChecks]);
+
+      const toggleEssential = (item) => {
+        setEssentialChecks(prev => ({ ...prev, [item]: !prev[item] }));
       };
 
       // --- 彩蛋 2：密技點擊計數器 ---
@@ -438,7 +478,7 @@
               {/* === 行程表 === */}
               {activeTab === 'itinerary' && (
                 <div className="animate-fade-in">
-                  <div className="flex items-center justify-between bg-gradient-to-r from-[#FFF4E6] to-[#FFEBE0] px-5 py-4 rounded-2xl border border-[#FFD0B5] mb-8">
+                  <div className="flex items-center justify-between bg-gradient-to-r from-[#FFF4E6] to-[#FFEBE0] px-5 py-4 rounded-2xl border border-[#FFD0B5] mb-4">
                     <div>
                       <div className="text-xs text-[#D85A42] font-extrabold mb-1">{WEATHER_MOCK[activeDay].date}</div>
                       <div className="text-base font-extrabold text-[#4A3F35] flex items-center gap-1.5">
@@ -449,6 +489,40 @@
                       <Icon name={WEATHER_MOCK[activeDay].icon} className={`text-xl ${WEATHER_MOCK[activeDay].color}`} />
                       <span className="text-[15px] font-extrabold text-[#4A3F35] mt-1">{WEATHER_MOCK[activeDay].temp}</span>
                     </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <button 
+                      onClick={() => setShowAccommodation(!showAccommodation)}
+                      className="inline-flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-[#F0EAE1] hover:border-[#FFD0B5] text-[#5C4F44] font-bold text-sm shadow-sm transition-all"
+                    >
+                      <Icon name="bed" className="text-[#FF7E67]" /> 
+                      今日住宿 
+                      <Icon name={showAccommodation ? "chevron-up" : "chevron-down"} className="ml-1 text-[#B5A99C] text-xs" />
+                    </button>
+                    
+                    {showAccommodation && (
+                      <div className="mt-2 bg-white rounded-xl p-4 border border-[#FFD0B5] shadow-[0_4px_12px_rgba(255,208,181,0.2)] animate-fade-in relative overflow-hidden">
+                        <div className="absolute left-0 top-0 w-1 h-full bg-[#FF7E67]"></div>
+                        <h4 className="font-extrabold text-[#3E332A] text-base mb-2">
+                          {ACCOMMODATIONS[activeDay]?.name}
+                        </h4>
+                        <div className="space-y-2 text-sm text-[#5C4F44]">
+                          {ACCOMMODATIONS[activeDay]?.phone !== '-' && (
+                            <div className="flex items-center gap-2"><Icon name="phone" className="w-4 text-center text-[#B5A99C]"/><span className="font-medium">{ACCOMMODATIONS[activeDay]?.phone}</span></div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Icon name="bath" className="w-4 text-center text-[#B5A99C]"/> 
+                            <span className="text-[#8A7D71]">浴缸：</span><span className="font-medium">{ACCOMMODATIONS[activeDay]?.bathtub}</span>
+                          </div>
+                          {ACCOMMODATIONS[activeDay]?.note && (
+                            <div className="flex items-start gap-2 mt-1">
+                              <span className="text-[#8A7D71] text-xs mt-0.5 bg-[#FDF9F1] px-2 py-1 rounded inline-block">{ACCOMMODATIONS[activeDay]?.note}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="relative border-l-[3px] border-[#FFD0B5] ml-3 pl-6 space-y-6">
@@ -502,6 +576,39 @@
               {/* === 待辦事項 === */}
               {activeTab === 'todo' && (
                 <div className="animate-fade-in space-y-8">
+                  
+                  <div className="mb-2">
+                    <button 
+                      onClick={() => setShowEssentials(!showEssentials)}
+                      className="inline-flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-[#F0EAE1] hover:border-[#FFD0B5] text-[#5C4F44] font-bold text-sm shadow-sm transition-all"
+                    >
+                      <Icon name="list-check" className="text-[#FF7E67]" /> 
+                      行前必備項目
+                      <Icon name={showEssentials ? "chevron-up" : "chevron-down"} className="ml-1 text-[#B5A99C] text-xs" />
+                    </button>
+                    
+                    {showEssentials && (
+                      <div className="mt-2 bg-white rounded-2xl p-5 border border-[#FFD0B5] shadow-[0_4px_12px_rgba(255,208,181,0.2)] animate-fade-in relative overflow-hidden">
+                        <div className="absolute left-0 top-0 w-1 h-full bg-[#FF7E67]"></div>
+                        <div className="space-y-4">
+                          {PRETRIP_ESSENTIALS_LIST.map((item, idx) => (
+                            <label key={idx} className="flex items-center gap-3 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={!!essentialChecks[item]}
+                                onChange={() => toggleEssential(item)}
+                                className="w-5 h-5 accent-[#FF7E67] rounded-md shrink-0"
+                              />
+                              <span className={`font-medium ${essentialChecks[item] ? 'line-through text-[#B5A99C]' : 'text-[#5C4F44]'}`}>
+                                {item}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <section>
                     <h2 className="text-base font-extrabold text-[#3E332A] mb-4 flex items-center gap-2">
                       <Icon name="check-square" className="text-[#FF7E67]" /> 行前準備 TO-DO
@@ -755,6 +862,18 @@
                       <div className="flex justify-between pb-3 border-b"><span className="text-[#8A7D71]">台灣聯絡人</span><span className="font-extrabold">葉小姐 0935-183-151</span></div>
                       <div className="flex justify-between"><span className="text-[#8A7D71]">台灣領隊</span><span className="font-extrabold">簡秋暖 0922-098-039</span></div>
                     </div>
+                  </section>
+
+                  <section className="bg-white rounded-2xl p-6 border border-[#F0EAE1]">
+                    <h2 className="font-extrabold mb-4 flex items-center gap-2"><Icon name="lightbulb" className="text-[#FFA94D]"/> 貼心旅遊提醒</h2>
+                    <ul className="space-y-3 text-sm text-[#5C4F44] font-medium">
+                      <li className="flex items-start gap-2.5"><Icon name="plug" className="text-[#8A7D71] mt-1 w-4 text-center"/> 韓國電壓 220V，為圓型二孔插頭</li>
+                      <li className="flex items-start gap-2.5"><Icon name="tint-slash" className="text-[#8A7D71] mt-1 w-4 text-center"/> 飯店水管冷水不可生飲</li>
+                      <li className="flex items-start gap-2.5"><Icon name="plane-slash" className="text-[#8A7D71] mt-1 w-4 text-center"/> 隨身液體不可超過 100cc</li>
+                      <li className="flex items-start gap-2.5"><Icon name="battery-full" className="text-[#8A7D71] mt-1 w-4 text-center"/> 行動電源必須隨身攜帶，不可託運</li>
+                      <li className="flex items-start gap-2.5"><Icon name="ban" className="text-[#8A7D71] mt-1 w-4 text-center"/> 回台禁帶水果與肉類製品</li>
+                      <li className="flex items-start gap-2.5"><Icon name="tooth" className="text-[#8A7D71] mt-1 w-4 text-center"/> 響應環保，飯店不提供一次性盥洗用品</li>
+                    </ul>
                   </section>
                 </div>
               )}
